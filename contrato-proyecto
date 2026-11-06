@@ -1,0 +1,62 @@
+# Contrato del Proyecto: api-client-googledrive
+
+## 1. Partes
+
+Entre:
+
+- **Solicitante:** Catedra de Redes II
+- **Responsable del desarrollo:** Tobias Mateo
+
+Se acuerda el presente contrato para la definición y ejecución del proyecto técnico descrito en este documento.
+
+## 2. Objeto del contrato
+
+Desarrollar un worker ejecutable por CLI en C para integración con la API de Google Drive (v3), con capacidad de:
+
+- Recibir el ID o la URL de un archivo público de Drive.
+- Consumir la API por HTTPS con una API key.
+- Validar la respuesta contra un schema mínimo.
+- Persistir el payload completo en SQLite.
+- Conservar el historial cuando los metadatos de un archivo cambian.
+- Terminar de forma controlada ante errores o cambios en el formato de la respuesta.
+
+## 3. Alcance funcional mínimo
+
+El proyecto debe incluir, como mínimo:
+
+1. Entrada por CLI: ID del archivo o URL (`.../d/{fileId}/...`), con el ID validado.
+2. Consumo del endpoint `GET /drive/v3/files/{fileId}` con el parámetro `fields`.
+3. Validación contra un schema mínimo: campos obligatorios `id`, `name`, `mimeType` y `webViewLink`; campos opcionales `createdTime`, `modifiedTime`, `size` y `md5Checksum`. Los campos que no estén en el schema se ignoran para la validación y quedan en el payload guardado.
+4. Persistencia de la respuesta completa en SQLite3, en las tablas `assets` y `assets_history`.
+5. Historial: si el asset ya existe y su payload cambió, el estado anterior se guarda en `assets_history` y luego se actualiza el asset, todo en una transacción.
+6. Manejo de errores: si la respuesta tiene un HTTP distinto de 200, no es JSON válido o le falta un campo obligatorio, la aplicación muestra un mensaje claro, termina con código de salida distinto de 0 y no guarda nada.
+7. Seguridad: la API key se lee de la variable de entorno `GDRIVE_API_KEY`, no se incluye en el repositorio y no se imprime en pantalla ni en logs.
+
+## 4. Entregables
+
+- Código fuente funcional del worker en C, con `Makefile`.
+- `README.md` con dependencias, requisitos, uso por CLI, flujo, tests y estructura del proyecto.
+- Definición de modelo de datos mínimo: `assets` y `assets_history`.
+- Documento de workplan del proyecto.
+
+## 5. Criterios de aceptación
+
+Se considerará cumplido el contrato cuando:
+
+1. El worker procese un archivo público de extremo a extremo.
+2. Se evidencie el almacenamiento del payload capturado.
+3. Dos ejecuciones sobre un archivo sin cambios no dupliquen el asset ni creen historial.
+4. Un cambio en los metadatos genere un registro en `assets_history`.
+5. Con un archivo inexistente, no público o con una respuesta sin campos obligatorios, el worker termine con error y no guarde nada.
+6. La API key no aparezca en la salida ni en el repositorio.
+
+## 6. Exclusiones
+
+No se incluye en este contrato, salvo acuerdo adicional:
+
+- Descarga o lectura del contenido de los archivos.
+- Creación, modificación o borrado de archivos en Drive.
+- Acceso a archivos privados (requeriría OAuth 2.0).
+- Listado masivo o sincronización de carpetas.
+- Desarrollo de interfaz gráfica.
+- Despliegue productivo y soporte posterior al período académico.
